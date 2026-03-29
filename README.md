@@ -14,6 +14,7 @@ MarkIT lets you browse the web in a built-in browser, save pages to colour-coded
 - **Two-step save flow** — pick a parent tag, then optionally drill into a subtag before saving
 - **Link management** — swipe to delete, search within any tag, favicon + domain display
 - **Smart delete** — when removing a parent tag, choose to delete all children or promote them to top-level
+- **iCloud sync** — data syncs automatically across all devices signed into the same Apple ID via CloudKit; falls back to local-only storage if iCloud is unavailable
 
 ## Requirements
 
@@ -30,6 +31,18 @@ MarkIT lets you browse the web in a built-in browser, save pages to colour-coded
 3. Build and run
 
 No third-party dependencies are required.
+
+### Enabling iCloud Sync
+
+iCloud sync is built in and activates automatically once the Xcode target is configured:
+
+1. Select your app target → **Signing & Capabilities**
+2. Click **+ Capability** and add **iCloud**
+3. Under iCloud, enable **CloudKit** and add a container — use the format `iCloud.com.<yourteam>.<bundleid>` (e.g. `iCloud.com.acme.MarkIT`)
+4. Click **+ Capability** again and add **Push Notifications** (required by CloudKit for sync triggers)
+5. Make sure the bundle ID in **General → Identity** matches what you registered
+
+When the app launches it will attempt to open a CloudKit-backed SwiftData store using `.automatic` container discovery. If the device is not signed into iCloud, or CloudKit is otherwise unavailable, the app falls back to a local-only store transparently — no data is lost and sync resumes the next time iCloud becomes available.
 
 ## Project Structure
 
@@ -71,15 +84,17 @@ SavedLink
 ├── title: String
 ├── faviconURL: String?
 ├── savedAt: Date
-└── tag: Tag
+└── tag: Tag?         // optional for CloudKit compatibility
 ```
 
 Depth is capped at 2 levels (parent → child) and enforced at creation time. Deleting a parent cascades to its children and their links unless children are promoted first.
+
+All model properties carry declaration-level defaults and to-one relationships are optional — both required for SwiftData ↔ CloudKit sync.
 
 ## Roadmap
 
 | Version | Features |
 |---------|----------|
-| MVP 1 (current) | Hierarchical tags, built-in browser, local SwiftData persistence |
-| MVP 2 | iCloud sync via CloudKit, Share Extension (save from Safari) |
+| MVP 1 (current) | Hierarchical tags, built-in browser, SwiftData + iCloud sync via CloudKit |
+| MVP 2 | Share Extension (save from Safari), link preview thumbnails |
 | MVP 3 | Reminders, export, duplicate link detection |

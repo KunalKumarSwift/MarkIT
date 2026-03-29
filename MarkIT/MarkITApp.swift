@@ -3,11 +3,37 @@ import SwiftData
 
 @main
 struct MarkITApp: App {
+    let container: ModelContainer
+
+    init() {
+        let schema = Schema([Tag.self, SavedLink.self])
+        do {
+            // Attempt to use a CloudKit-backed store for iCloud sync.
+            // Requires the iCloud + CloudKit capabilities in the Xcode target
+            // and a matching container identifier (e.g. iCloud.com.yourteam.MarkIT).
+            let cloudConfig = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .automatic
+            )
+            container = try ModelContainer(for: schema, configurations: [cloudConfig])
+        } catch {
+            // Fall back to local-only storage when CloudKit is unavailable
+            // (simulator, user not signed in to iCloud, etc.).
+            do {
+                let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+                container = try ModelContainer(for: schema, configurations: [localConfig])
+            } catch {
+                fatalError("Could not create ModelContainer: \(error)")
+            }
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [Tag.self, SavedLink.self])
+        .modelContainer(container)
     }
 }
 
