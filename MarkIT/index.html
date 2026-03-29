@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy – MarkIT</title>
+  <meta name="description" content="MarkIT Privacy Policy – Mark My Page collects no personal data. All bookmarks and progress are stored locally on your device." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:    #F5813C;
+      --accent-lt: #FF9A5C;
+      --bg:        #0D0D12;
+      --surface:   #16161E;
+      --border:    rgba(255,255,255,0.07);
+      --text:      #E8E8F0;
+      --muted:     #9090A8;
+      --radius:    16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ── Background glow ── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 800px; height: 600px;
+      background: radial-gradient(ellipse at center, rgba(245,129,60,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ── */
+    .container {
+      position: relative; z-index: 1;
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .app-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 8px 18px 8px 10px;
+      margin-bottom: 32px;
+    }
+
+    .app-badge .icon {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-lt));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .app-badge span {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--text);
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 30%, var(--accent-lt));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 14px;
+    }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: rgba(245,129,60,0.25); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .card-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .card-icon.orange { background: rgba(245,129,60,0.15); }
+    .card-icon.green  { background: rgba(52,211,153,0.12); }
+    .card-icon.blue   { background: rgba(96,165,250,0.12); }
+    .card-icon.purple { background: rgba(167,139,250,0.12); }
+
+    .card h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .card p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .card p:last-child { margin-bottom: 0; }
+
+    /* ── Highlight box ── */
+    .highlight {
+      background: rgba(245,129,60,0.08);
+      border: 1px solid rgba(245,129,60,0.2);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.875rem;
+      color: #c8c8d8;
+      margin-top: 12px;
+    }
+
+    /* ── List ── */
+    ul.policy-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    ul.policy-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    ul.policy-list li::before {
+      content: '';
+      margin-top: 7px;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── Warning banner ── */
+    .warning-banner {
+      background: rgba(167,139,250,0.08);
+      border: 1px solid rgba(167,139,250,0.2);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.875rem;
+      color: #c8c8d8;
+      margin-top: 12px;
+      font-weight: 500;
+    }
+
+    strong { color: var(--text); font-weight: 600; }
+
+    /* ── Divider ── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 8px 0 20px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding-top: 40px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 500px) {
+      .card { padding: 24px 20px; }
+      .container { padding: 40px 16px 80px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <header>
+      <div class="app-badge">
+        <div class="icon">🔖</div>
+        <span>MarkIT · Mark My Page</span>
+      </div>
+      <h1>Privacy Policy</h1>
+      <div class="meta">
+        <span>Effective Date: March 29, 2026</span>
+        <div class="dot"></div>
+        <span>Version 1.0</span>
+      </div>
+    </header>
+
+    <!-- Overview -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon orange">📋</div>
+        <h2>Overview</h2>
+      </div>
+      <p>
+        Mark My Page is a bookmark management app designed to help you organize, tag, and track your
+        progress across websites and online resources. We are committed to your privacy. This policy
+        explains clearly what data we collect — and more importantly, what we do not.
+      </p>
+    </div>
+
+    <!-- Data We Do Not Collect -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon green">🔒</div>
+        <h2>Data We Do Not Collect</h2>
+      </div>
+      <p>
+        Mark My Page does <strong>not</strong> collect, store, transmit, or share any personal
+        information from users. Specifically, we do not collect:
+      </p>
+      <ul class="policy-list">
+        <li>Your name, email address, or any account credentials</li>
+        <li>Your browsing history or activity outside the app</li>
+        <li>Device identifiers, IP addresses, or location data</li>
+        <li>Analytics, usage statistics, or behavioral data</li>
+        <li>Any information entered into websites you visit</li>
+      </ul>
+      <div class="highlight">
+        All MarkIT data — tags, bookmarks, and reading progress — are stored locally on your device
+        and are never transmitted to our servers.
+      </div>
+    </div>
+
+    <!-- iCloud Sync -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">☁️</div>
+        <h2>iCloud Sync (Optional)</h2>
+      </div>
+      <p>
+        If you are signed into iCloud on your device, MarkIT may use Apple's CloudKit to sync your
+        bookmarks and tags across your own devices. This sync happens entirely through Apple's
+        infrastructure — we never receive, access, or store your iCloud data. Apple's privacy policy
+        governs this sync.
+      </p>
+      <p>
+        You can disable iCloud sync at any time via <strong>Settings → Apple ID → iCloud → MarkIT</strong>.
+      </p>
+    </div>
+
+    <!-- Third-Party Websites -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon purple">🌐</div>
+        <h2>Third-Party Websites &amp; Your Responsibility</h2>
+      </div>
+      <p>
+        Mark My Page acts solely as a bookmark and progress tracker. When you open a link within the
+        app, you are navigating to an external website that is entirely outside our control.
+      </p>
+      <p>
+        Third-party websites — including developer documentation portals, blogs, SaaS platforms, and
+        any other URLs you bookmark — may independently collect information about you. This may include:
+      </p>
+      <ul class="policy-list">
+        <li>Cookies and tracking scripts</li>
+        <li>Login credentials and session data</li>
+        <li>IP address and device information</li>
+        <li>Usage patterns and analytics</li>
+      </ul>
+      <div class="warning-banner">
+        Mark My Page is not responsible for the privacy practices or data collection policies of any
+        website you visit. <strong>You are solely responsible for reviewing and understanding the
+        privacy policy of each website you access.</strong>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon orange">✉️</div>
+        <h2>Contact</h2>
+      </div>
+      <p>
+        If you have any questions or concerns about this privacy policy, please reach out. We're happy
+        to clarify anything.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <p>© 2026 MarkIT · Mark My Page. All rights reserved.</p>
+      <p style="margin-top:6px;">This policy may be updated occasionally. Continued use of the app constitutes acceptance of the latest version.</p>
+    </footer>
+
+  </div>
+</body>
+</html>
