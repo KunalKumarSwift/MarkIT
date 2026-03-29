@@ -3,14 +3,16 @@ import SwiftData
 
 @Model
 final class SavedLink {
-    var id: UUID
-    var url: String
-    var title: String
+    // CloudKit requires all non-optional properties to have declaration-level defaults.
+    var id: UUID = UUID()
+    var url: String = ""
+    var title: String = ""
     var faviconURL: String?
-    var savedAt: Date
+    var savedAt: Date = Date()
 
-    // The tag this link belongs to (can be a parent or child tag)
-    var tag: Tag
+    // CloudKit requires to-one relationships to be optional.
+    // The tag this link belongs to (can be a parent or child tag).
+    var tag: Tag?
 
     init(url: String, title: String, faviconURL: String? = nil, tag: Tag) {
         self.id = UUID()
