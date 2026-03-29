@@ -56,6 +56,13 @@ struct ContentView: View {
             .tabItem {
                 Label("Browser", systemImage: "safari.fill")
             }
+
+            NavigationStack {
+                MoreView()
+            }
+            .tabItem {
+                Label("More", systemImage: "ellipsis.circle.fill")
+            }
         }
     }
 }
