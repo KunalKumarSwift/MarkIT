@@ -123,16 +123,16 @@ struct HomeView: View {
 
     private var deleteDialogTitle: String {
         guard let tag = tagToDelete else { return "Delete Tag" }
-        if tag.children.isEmpty {
+        if tag.childrenList.isEmpty {
             return "Delete \"\(tag.name)\"?"
         }
-        return "Delete \"\(tag.name)\" and its \(tag.children.count) subtag(s)?"
+        return "Delete \"\(tag.name)\" and its \(tag.childrenList.count) subtag(s)?"
     }
 
     @ViewBuilder
     private var deleteDialogButtons: some View {
         if let tag = tagToDelete {
-            if !tag.children.isEmpty {
+            if !tag.childrenList.isEmpty {
                 Button("Delete All Children", role: .destructive) {
                     deleteTag(tag, promoteChildren: false)
                 }
@@ -154,7 +154,7 @@ struct HomeView: View {
 
     private func deleteTag(_ tag: Tag, promoteChildren: Bool) {
         if promoteChildren {
-            for child in tag.children {
+            for child in tag.childrenList {
                 child.parent = nil
             }
         }

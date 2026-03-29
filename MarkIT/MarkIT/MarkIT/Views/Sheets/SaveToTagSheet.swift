@@ -18,6 +18,8 @@ struct SaveToTagSheet: View {
     @State private var selectedParent: Tag?
     @State private var selectedChild: Tag?
     @State private var saved = false
+    @State private var showAddTagSheet = false
+    @State private var addTagMode: AddTagMode = .newParent
 
     private var selectedTag: Tag? {
         selectedChild ?? selectedParent
@@ -51,6 +53,23 @@ struct SaveToTagSheet: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
+            }
+            .sheet(isPresented: $showAddTagSheet) {
+                AddTagSheet(mode: addTagMode)
+            }
+            .onChange(of: parentTags.count) { oldCount, newCount in
+                // Auto-select newly created parent tag
+                if newCount > oldCount {
+                    selectedParent = parentTags.last
+                    selectedChild = nil
+                }
+            }
+            .onChange(of: selectedParent?.childrenList.count) { oldCount, newCount in
+                // Auto-select newly created subtag
+                guard let newCount, let oldCount, newCount > oldCount else { return }
+                selectedChild = selectedParent?.childrenList
+                    .sorted { $0.createdAt < $1.createdAt }
+                    .last
             }
         }
     }
@@ -91,14 +110,20 @@ struct SaveToTagSheet: View {
                     // Parent row
                     parentRow(parent)
 
-                    // Child rows (expanded when parent is selected)
+                    // Child rows + add subtag (expanded when parent is selected)
                     if selectedParent?.id == parent.id {
-                        let children = parent.children.sorted { $0.createdAt < $1.createdAt }
+                        let children = parent.childrenList.sorted { $0.createdAt < $1.createdAt }
                         ForEach(children) { child in
                             childRow(child)
                         }
+                        addSubtagButton(for: parent)
                     }
                 }
+            }
+
+            // New Tag row at the bottom
+            Section {
+                newTagButton
             }
         }
         .listStyle(.insetGrouped)
@@ -136,8 +161,8 @@ struct SaveToTagSheet: View {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
 
-                    if !parent.children.isEmpty {
-                        Text("\(parent.children.count) subtag(s)")
+                    if !parent.childrenList.isEmpty {
+                        Text("\(parent.childrenList.count) subtag(s)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -145,18 +170,16 @@ struct SaveToTagSheet: View {
 
                 Spacer()
 
-                // Selection indicator or expand chevron
+                // Selection indicator + expand chevron
                 HStack(spacing: 8) {
                     if selectedParent?.id == parent.id && selectedChild == nil {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                     }
 
-                    if !parent.children.isEmpty {
-                        Image(systemName: selectedParent?.id == parent.id ? "chevron.up" : "chevron.down")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Image(systemName: selectedParent?.id == parent.id ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -191,8 +214,55 @@ struct SaveToTagSheet: View {
 
                 if selectedChild?.id == child.id {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                 }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Add Subtag Button
+
+    private func addSubtagButton(for parent: Tag) -> some View {
+        Button {
+            addTagMode = .newChild(parent: parent)
+            showAddTagSheet = true
+        } label: {
+            HStack(spacing: 12) {
+                Color.clear.frame(width: 8)
+
+                Image(systemName: "plus.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 30, height: 30)
+
+                Text("New Subtag")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.accentColor)
+
+                Spacer()
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - New Tag Button
+
+    private var newTagButton: some View {
+        Button {
+            addTagMode = .newParent
+            showAddTagSheet = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 36, height: 36)
+
+                Text("New Tag")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.accentColor)
+
+                Spacer()
             }
         }
         .buttonStyle(.plain)
@@ -209,10 +279,24 @@ struct SaveToTagSheet: View {
             VStack(spacing: 6) {
                 Text("No Tags Yet")
                     .font(.headline)
-                Text("Create a tag first from the Library tab.")
+                Text("Create your first tag to start saving.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+            }
+
+            Button {
+                addTagMode = .newParent
+                showAddTagSheet = true
+            } label: {
+                Label("Create Tag", systemImage: "plus")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

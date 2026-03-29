@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Background: deep indigo to rich violet -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5B5BD6"/>
+      <stop offset="100%" stop-color="#3B1F8C"/>
+    </linearGradient>
+    <!-- Bookmark shadow -->
+    <filter id="shadow" x="-10%" y="-5%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="24" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <!-- Tag shadow -->
+    <filter id="tagShadow" x="-20%" y="-20%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000000" flood-opacity="0.22"/>
+    </filter>
+    <!-- Subtle inner glow on background -->
+    <radialGradient id="glow" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#7C7FE8" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#3B1F8C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background fill -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- Subtle inner glow layer -->
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+
+  <!-- ── Bookmark ribbon ── -->
+  <!--
+    Classic ribbon bookmark: rectangle with a V-notch cut into the bottom.
+    Centered horizontally. Top sits near 160, notch tip at ~790.
+    Width 380px, so x: 322–702.
+  -->
+  <path
+    d="M322 160 L702 160 L702 800 L512 690 L322 800 Z"
+    fill="white"
+    opacity="0.97"
+    filter="url(#shadow)"
+  />
+
+  <!-- Bookmark inner tint line (decorative top strip inside bookmark) -->
+  <rect x="322" y="160" width="380" height="10" rx="0" fill="#C7C9F7" opacity="0.5"/>
+
+  <!-- ── Tag / label shape (overlapping bottom-right of bookmark) ── -->
+  <!--
+    Price-tag shape: rounded rectangle with a small circle hole at left,
+    pointing right. Positioned lower-right, slightly overlapping the bookmark.
+    This represents the "tagging" / organization feature.
+  -->
+  <g filter="url(#tagShadow)">
+    <!-- Tag body: a rounded rect with a left-pointing notch -->
+    <path
+      d="M530 618
+         L530 618
+         Q525 618 520 623
+         L488 656
+         Q483 661 488 666
+         L520 699
+         Q525 704 530 704
+         L686 704
+         Q698 704 698 692
+         L698 630
+         Q698 618 686 618
+         Z"
+      fill="#F59E0B"
+    />
+    <!-- Hole on the tag (string hole) -->
+    <circle cx="510" cy="661" r="10" fill="white" opacity="0.85"/>
+  </g>
+
+  <!-- Tag label lines (three thin white lines suggesting text on the tag) -->
+  <line x1="545" y1="643" x2="678" y2="643" stroke="white" stroke-width="7" stroke-linecap="round" opacity="0.7"/>
+  <line x1="545" y1="661" x2="660" y2="661" stroke="white" stroke-width="7" stroke-linecap="round" opacity="0.7"/>
+  <line x1="545" y1="679" x2="668" y2="679" stroke="white" stroke-width="7" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- ── Link/chain icon inside bookmark (top half) — subtle, represents web URLs ── -->
+  <!--
+    Two chain-link ovals centered inside the bookmark top area,
+    slightly rotated — represents "saved links / web URLs".
+  -->
+  <g transform="translate(512, 390)" opacity="0.18">
+    <!-- Left link oval -->
+    <ellipse cx="-36" cy="0" rx="52" ry="28" fill="none" stroke="#3B1F8C" stroke-width="22" stroke-linecap="round" transform="rotate(-38)"/>
+    <!-- Right link oval -->
+    <ellipse cx="36" cy="0" rx="52" ry="28" fill="none" stroke="#3B1F8C" stroke-width="22" stroke-linecap="round" transform="rotate(-38)"/>
+  </g>
+
+  <!-- Same chain icon but in white, slightly offset for visibility -->
+  <g transform="translate(512, 385)" opacity="0.72">
+    <ellipse cx="-30" cy="0" rx="46" ry="24" fill="none" stroke="white" stroke-width="18" stroke-linecap="round" transform="rotate(-35)"/>
+    <ellipse cx="30" cy="0" rx="46" ry="24" fill="none" stroke="white" stroke-width="18" stroke-linecap="round" transform="rotate(-35)"/>
+  </g>
+
+  <!-- Small dot above link icon (URL bullet / marker) -->
+  <circle cx="512" cy="290" r="14" fill="white" opacity="0.5"/>
+
+</svg>

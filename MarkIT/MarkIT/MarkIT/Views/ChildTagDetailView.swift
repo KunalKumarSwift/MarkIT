@@ -7,9 +7,11 @@ struct ChildTagDetailView: View {
     let tag: Tag
 
     @State private var searchText = ""
+    /// Set to trigger navigation to BrowserView starting at the original URL (not resume URL).
+    @State private var openFromStartLink: SavedLink?
 
     private var filteredLinks: [SavedLink] {
-        let sorted = tag.links.sorted { $0.savedAt > $1.savedAt }
+        let sorted = tag.linksList.sorted { $0.savedAt > $1.savedAt }
         if searchText.isEmpty { return sorted }
         let query = searchText.lowercased()
         return sorted.filter {
@@ -19,7 +21,7 @@ struct ChildTagDetailView: View {
 
     var body: some View {
         Group {
-            if tag.links.isEmpty {
+            if tag.linksList.isEmpty {
                 emptyState
             } else {
                 linksList
@@ -28,6 +30,10 @@ struct ChildTagDetailView: View {
         .navigationTitle("\(tag.emoji) \(tag.name)")
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $searchText, prompt: "Search links")
+        // Programmatic navigation for "Open from Start" context menu action
+        .navigationDestination(item: $openFromStartLink) { link in
+            BrowserView(initialURL: link.url, link: link)
+        }
     }
 
     // MARK: - Links List
@@ -35,8 +41,36 @@ struct ChildTagDetailView: View {
     private var linksList: some View {
         List {
             ForEach(filteredLinks) { link in
-                NavigationLink(destination: BrowserView(initialURL: link.url)) {
+                // Default tap: continue from where user left off (resumeURL = progressURL ?? url)
+                NavigationLink(destination: BrowserView(initialURL: link.resumeURL, link: link)) {
                     LinkRow(link: link)
+                }
+                .contextMenu {
+                    // Only show "Open from Start" when the user has saved a different progress URL
+                    if link.hasProgress {
+                        Button {
+                            openFromStartLink = link
+                        } label: {
+                            Label("Open from Start", systemImage: "arrow.counterclockwise")
+                        }
+
+                        Button(role: .destructive) {
+                            link.progressURL = nil
+                            link.progressNote = nil
+                            link.progressPercent = 0
+                            link.lastProgressAt = nil
+                        } label: {
+                            Label("Reset Progress", systemImage: "arrow.uturn.backward")
+                        }
+
+                        Divider()
+                    }
+
+                    Button(role: .destructive) {
+                        modelContext.delete(link)
+                    } label: {
+                        Label("Delete Link", systemImage: "trash")
+                    }
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {

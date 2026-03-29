@@ -10,7 +10,7 @@ struct TagCard: View {
 
     private var subtitle: String {
         if tag.isTopLevel {
-            let childCount = tag.children.count
+            let childCount = tag.childrenList.count
             let linkCount = tag.totalLinkCount
             var parts: [String] = []
             if childCount > 0 {
@@ -21,7 +21,7 @@ struct TagCard: View {
             }
             return parts.isEmpty ? "Empty" : parts.joined(separator: " · ")
         } else {
-            let count = tag.links.count
+            let count = tag.linksList.count
             return "\(count) \(count == 1 ? "link" : "links")"
         }
     }

@@ -20,8 +20,11 @@ struct MarkITApp: App {
         } catch {
             // Fall back to local-only storage when CloudKit is unavailable
             // (simulator, user not signed in to iCloud, etc.).
+            // cloudKitDatabase: .none is required — without it, SwiftData still
+            // tries to use NSPersistentCloudKitContainer when CloudKit entitlements
+            // are present, which fails in the same way.
             do {
-                let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+                let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
                 container = try ModelContainer(for: schema, configurations: [localConfig])
             } catch {
                 fatalError("Could not create ModelContainer: \(error)")

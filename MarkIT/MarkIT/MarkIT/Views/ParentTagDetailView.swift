@@ -11,6 +11,7 @@ struct ParentTagDetailView: View {
     @State private var subtahToDelete: Tag?
     @State private var showDeleteSubtagAlert = false
     @State private var searchText = ""
+    @State private var openFromStartLink: SavedLink?
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -19,10 +20,10 @@ struct ParentTagDetailView: View {
 
     private var filteredDirectLinks: [SavedLink] {
         if searchText.isEmpty {
-            return tag.links.sorted { $0.savedAt > $1.savedAt }
+            return tag.linksList.sorted { $0.savedAt > $1.savedAt }
         }
         let query = searchText.lowercased()
-        return tag.links
+        return tag.linksList
             .filter { $0.title.lowercased().contains(query) || $0.url.lowercased().contains(query) }
             .sorted { $0.savedAt > $1.savedAt }
     }
@@ -31,17 +32,17 @@ struct ParentTagDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 // Child tag grid
-                if !tag.children.isEmpty || true {
+                if !tag.childrenList.isEmpty || true {
                     childrenSection
                 }
 
                 // Direct links section
-                if !tag.links.isEmpty || !searchText.isEmpty {
+                if !tag.linksList.isEmpty || !searchText.isEmpty {
                     directLinksSection
                 }
 
                 // Empty state when everything is empty
-                if tag.children.isEmpty && tag.links.isEmpty {
+                if tag.childrenList.isEmpty && tag.linksList.isEmpty {
                     emptyState
                 }
             }
@@ -66,6 +67,9 @@ struct ParentTagDetailView: View {
         .sheet(item: $subtahToEdit) { subtag in
             AddTagSheet(mode: .edit(tag: subtag))
         }
+        .navigationDestination(item: $openFromStartLink) { link in
+            BrowserView(initialURL: link.url, link: link)
+        }
         .alert(
             "Delete \"\(subtahToDelete?.name ?? "")\"?",
             isPresented: $showDeleteSubtagAlert,
@@ -79,7 +83,7 @@ struct ParentTagDetailView: View {
                 subtahToDelete = nil
             }
         } message: { subtag in
-            Text("This will also delete all \(subtag.links.count) link(s) saved to this subtag.")
+            Text("This will also delete all \(subtag.linksList.count) link(s) saved to this subtag.")
         }
     }
 
@@ -103,7 +107,7 @@ struct ParentTagDetailView: View {
                 }
             }
 
-            if tag.children.isEmpty {
+            if tag.childrenList.isEmpty {
                 Button {
                     showAddSubtag = true
                 } label: {
@@ -122,7 +126,7 @@ struct ParentTagDetailView: View {
                 .buttonStyle(.plain)
             } else {
                 LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(tag.children.sorted(by: { $0.createdAt < $1.createdAt })) { child in
+                    ForEach(tag.childrenList.sorted(by: { $0.createdAt < $1.createdAt })) { child in
                         NavigationLink(destination: ChildTagDetailView(tag: child)) {
                             TagCard(tag: child, isCompact: true)
                         }
@@ -163,10 +167,37 @@ struct ParentTagDetailView: View {
             } else {
                 LazyVStack(spacing: 0) {
                     ForEach(filteredDirectLinks) { link in
-                        NavigationLink(destination: BrowserView(initialURL: link.url)) {
+                        // Default tap: continue from where user left off
+                        NavigationLink(destination: BrowserView(initialURL: link.resumeURL, link: link)) {
                             LinkRow(link: link)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            if link.hasProgress {
+                                Button {
+                                    openFromStartLink = link
+                                } label: {
+                                    Label("Open from Start", systemImage: "arrow.counterclockwise")
+                                }
+
+                                Button(role: .destructive) {
+                                    link.progressURL = nil
+                                    link.progressNote = nil
+                                    link.progressPercent = 0
+                                    link.lastProgressAt = nil
+                                } label: {
+                                    Label("Reset Progress", systemImage: "arrow.uturn.backward")
+                                }
+
+                                Divider()
+                            }
+
+                            Button(role: .destructive) {
+                                modelContext.delete(link)
+                            } label: {
+                                Label("Delete Link", systemImage: "trash")
+                            }
+                        }
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
                                 modelContext.delete(link)
