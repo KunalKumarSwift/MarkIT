@@ -13,6 +13,7 @@ final class WebViewStore: ObservableObject {
     @Published var canGoBack: Bool = false
     @Published var canGoForward: Bool = false
     @Published var isLoading: Bool = false
+    @Published var progress: Double = 0
 
     private var observations: [NSKeyValueObservation] = []
 
@@ -39,6 +40,9 @@ final class WebViewStore: ObservableObject {
             webView.observe(\.isLoading, options: .new) { [weak self] webView, _ in
                 DispatchQueue.main.async { self?.isLoading = webView.isLoading }
             },
+            webView.observe(\.estimatedProgress, options: .new) { [weak self] webView, _ in
+                DispatchQueue.main.async { self?.progress = webView.estimatedProgress }
+            },
         ]
     }
 
@@ -48,7 +52,6 @@ final class WebViewStore: ObservableObject {
 
     func load(_ urlString: String) {
         var resolved = urlString.trimmingCharacters(in: .whitespaces)
-
         if !resolved.hasPrefix("http://") && !resolved.hasPrefix("https://") {
             if resolved.contains(".") && !resolved.contains(" ") {
                 resolved = "https://" + resolved
@@ -57,17 +60,15 @@ final class WebViewStore: ObservableObject {
                 resolved = "https://www.google.com/search?q=\(encoded)"
             }
         }
-
         guard let url = URL(string: resolved) else { return }
         webView.load(URLRequest(url: url))
     }
 }
 
-// MARK: - WebView (UIViewRepresentable)
+// MARK: - WebViewRepresentable
 
 struct WebViewRepresentable: UIViewRepresentable {
     let store: WebViewStore
-
     func makeUIView(context: Context) -> WKWebView { store.webView }
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 }
@@ -79,17 +80,29 @@ struct BrowserView: View {
 
     @StateObject private var store = WebViewStore()
     @State private var addressBarText = ""
-    @State private var isEditingAddress = false
+    @FocusState private var addressFocused: Bool
     @State private var showSaveSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
-            Divider()
+            // Progress bar + top bar
+            VStack(spacing: 0) {
+                DSProgressBar(progress: store.progress)
+                topBar
+            }
+            .dsGlass()
+            .overlay(alignment: .bottom) {
+                Divider()
+            }
+
             WebViewRepresentable(store: store)
                 .ignoresSafeArea(edges: .bottom)
-            Divider()
+
             bottomBar
+                .dsGlass()
+                .overlay(alignment: .top) {
+                    Divider()
+                }
         }
         .navigationBarHidden(true)
         .sheet(isPresented: $showSaveSheet) {
@@ -101,7 +114,7 @@ struct BrowserView: View {
             store.load(url)
         }
         .onReceive(store.$pageURL) { url in
-            if !isEditingAddress {
+            if !addressFocused {
                 addressBarText = url
             }
         }
@@ -110,104 +123,87 @@ struct BrowserView: View {
     // MARK: - Top Bar
 
     private var topBar: some View {
-        HStack(spacing: 8) {
-            // Address bar
-            HStack(spacing: 6) {
+        HStack(spacing: DSSpacing.sm) {
+            HStack(spacing: DSSpacing.sm) {
                 Image(systemName: store.isLoading ? "xmark" : "magnifyingglass")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DSColors.secondary)
                     .frame(width: 16)
                     .onTapGesture {
                         if store.isLoading { store.webView.stopLoading() }
                     }
 
-                TextField("Search or enter URL", text: $addressBarText, onEditingChanged: { editing in
-                    isEditingAddress = editing
-                })
-                .font(.subheadline)
-                .autocapitalization(.none)
-                .autocorrectionDisabled()
-                .keyboardType(.URL)
-                .onSubmit {
-                    isEditingAddress = false
-                    store.load(addressBarText)
-                }
+                TextField("Search or enter URL", text: $addressBarText)
+                    .font(DSFont.subheadline)
+                    .autocapitalization(.none)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                    .focused($addressFocused)
+                    .onSubmit {
+                        addressFocused = false
+                        store.load(addressBarText)
+                    }
 
-                if !addressBarText.isEmpty && isEditingAddress {
+                if !addressBarText.isEmpty && addressFocused {
                     Button {
                         addressBarText = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(DSColors.secondary)
                     }
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding(.horizontal, DSSpacing.md)
+            .padding(.vertical, DSSpacing.sm)
+            .background(DSColors.tertiaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: DSRadius.md, style: .continuous))
+            .scaleEffect(addressFocused ? 1.01 : 1.0)
+            .animation(DSAnimation.snappy, value: addressFocused)
 
-            // Save button
+            // Save / bookmark button
             Button {
                 showSaveSheet = true
             } label: {
                 Image(systemName: "bookmark")
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(store.pageURL.isEmpty ? .secondary : .accentColor)
+                    .foregroundStyle(store.pageURL.isEmpty ? DSColors.secondary : DSColors.accent)
             }
             .disabled(store.pageURL.isEmpty)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color(.systemBackground))
+        .padding(.horizontal, DSSpacing.md)
+        .padding(.vertical, DSSpacing.sm)
     }
 
     // MARK: - Bottom Bar
 
     private var bottomBar: some View {
         HStack {
-            Button {
+            navButton(icon: "chevron.left", enabled: store.canGoBack) {
                 store.webView.goBack()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .medium))
             }
-            .disabled(!store.canGoBack)
-
             Spacer()
-
-            Button {
+            navButton(icon: "chevron.right", enabled: store.canGoForward) {
                 store.webView.goForward()
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 18, weight: .medium))
             }
-            .disabled(!store.canGoForward)
-
             Spacer()
-
-            Button {
-                if store.isLoading {
-                    store.webView.stopLoading()
-                } else {
-                    store.webView.reload()
-                }
-            } label: {
-                Image(systemName: store.isLoading ? "xmark" : "arrow.clockwise")
-                    .font(.system(size: 18, weight: .medium))
+            navButton(icon: store.isLoading ? "xmark" : "arrow.clockwise", enabled: true) {
+                store.isLoading ? store.webView.stopLoading() : store.webView.reload()
             }
-
             Spacer()
-
-            Button {
+            navButton(icon: "house", enabled: true) {
                 store.load("https://www.google.com")
-            } label: {
-                Image(systemName: "house")
-                    .font(.system(size: 18, weight: .medium))
             }
         }
-        .padding(.horizontal, 32)
-        .padding(.vertical, 12)
-        .background(Color(.systemBackground))
+        .padding(.horizontal, DSSpacing.xxl)
+        .padding(.vertical, DSSpacing.md)
+    }
+
+    private func navButton(icon: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(enabled ? DSColors.primary : DSColors.tertiary)
+        }
+        .disabled(!enabled)
     }
 }

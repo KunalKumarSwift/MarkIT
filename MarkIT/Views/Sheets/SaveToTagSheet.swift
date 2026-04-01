@@ -4,6 +4,7 @@ import SwiftData
 struct SaveToTagSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     let url: String
     let title: String
@@ -17,33 +18,31 @@ struct SaveToTagSheet: View {
 
     @State private var selectedParent: Tag?
     @State private var selectedChild: Tag?
-    @State private var saved = false
 
-    private var selectedTag: Tag? {
-        selectedChild ?? selectedParent
-    }
+    private var selectedTag: Tag? { selectedChild ?? selectedParent }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Page info header
                 pageInfoHeader
-                    .padding()
+                    .padding(DSSpacing.lg)
+                    .dsGlass()
+                    .overlay(alignment: .bottom) { Divider() }
 
-                Divider()
-
-                // Tag selection
                 if parentTags.isEmpty {
-                    noTagsState
+                    DSEmptyState(
+                        systemImage: "tag.slash",
+                        title: "No Tags Yet",
+                        message: "Create a tag first from the Library tab."
+                    )
                 } else {
                     tagSelectionList
                 }
 
-                Spacer()
+                Spacer(minLength: 0)
 
-                // Save button
                 saveButton
-                    .padding()
+                    .padding(DSSpacing.lg)
             }
             .navigationTitle("Save to Tag")
             .navigationBarTitleDisplayMode(.inline)
@@ -58,26 +57,25 @@ struct SaveToTagSheet: View {
     // MARK: - Page Info Header
 
     private var pageInfoHeader: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DSSpacing.md) {
             Image(systemName: "doc.richtext")
                 .font(.title2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DSColors.secondary)
                 .frame(width: 40, height: 40)
-                .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .background(DSColors.secondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: DSRadius.sm, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title.isEmpty ? "Untitled Page" : title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(DSFont.subheadline)
+                    .foregroundStyle(DSColors.primary)
                     .lineLimit(1)
 
                 Text(url)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(DSFont.caption)
+                    .foregroundStyle(DSColors.secondary)
                     .lineLimit(1)
             }
-
             Spacer()
         }
     }
@@ -88,30 +86,29 @@ struct SaveToTagSheet: View {
         List {
             ForEach(parentTags) { parent in
                 Section {
-                    // Parent row
                     parentRow(parent)
 
-                    // Child rows (expanded when parent is selected)
                     if selectedParent?.id == parent.id {
                         let children = parent.children.sorted { $0.createdAt < $1.createdAt }
                         ForEach(children) { child in
                             childRow(child)
+                                .transition(DSTransition.slideAndFade)
                         }
                     }
                 }
             }
         }
         .listStyle(.insetGrouped)
-        .animation(.default, value: selectedParent?.id)
+        .animation(DSAnimation.spring, value: selectedParent?.id)
     }
 
     // MARK: - Parent Row
 
     private func parentRow(_ parent: Tag) -> some View {
-        Button {
-            withAnimation {
+        let tagColor = DSTagColor(hex: parent.colorHex, colorScheme: colorScheme)
+        return Button {
+            withAnimation(DSAnimation.spring) {
                 if selectedParent?.id == parent.id {
-                    // Deselect
                     selectedParent = nil
                     selectedChild = nil
                 } else {
@@ -120,42 +117,40 @@ struct SaveToTagSheet: View {
                 }
             }
         } label: {
-            HStack(spacing: 12) {
-                // Color dot + emoji
+            HStack(spacing: DSSpacing.md) {
                 ZStack {
                     Circle()
-                        .fill(Color(hex: parent.colorHex))
+                        .fill(tagColor.background)
                         .frame(width: 36, height: 36)
                     Text(parent.emoji)
-                        .font(.subheadline)
+                        .font(DSFont.subheadline)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(parent.name)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.primary)
+                        .font(DSFont.subheadline)
+                        .foregroundStyle(DSColors.primary)
 
                     if !parent.children.isEmpty {
                         Text("\(parent.children.count) subtag(s)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(DSFont.caption)
+                            .foregroundStyle(DSColors.secondary)
                     }
                 }
 
                 Spacer()
 
-                // Selection indicator or expand chevron
-                HStack(spacing: 8) {
+                HStack(spacing: DSSpacing.sm) {
                     if selectedParent?.id == parent.id && selectedChild == nil {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(DSColors.accent)
+                            .transition(DSTransition.scaleAndFade)
                     }
-
                     if !parent.children.isEmpty {
                         Image(systemName: selectedParent?.id == parent.id ? "chevron.up" : "chevron.down")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(DSColors.secondary)
+                            .animation(DSAnimation.snappy, value: selectedParent?.id)
                     }
                 }
             }
@@ -166,57 +161,37 @@ struct SaveToTagSheet: View {
     // MARK: - Child Row
 
     private func childRow(_ child: Tag) -> some View {
-        Button {
-            withAnimation {
+        let tagColor = DSTagColor(hex: child.colorHex, colorScheme: colorScheme)
+        return Button {
+            withAnimation(DSAnimation.snappy) {
                 selectedChild = (selectedChild?.id == child.id) ? nil : child
             }
         } label: {
-            HStack(spacing: 12) {
-                // Indent + color dot + emoji
-                Color.clear.frame(width: 8)
+            HStack(spacing: DSSpacing.md) {
+                Color.clear.frame(width: DSSpacing.lg)
 
                 ZStack {
                     Circle()
-                        .fill(Color(hex: child.colorHex))
+                        .fill(tagColor.background)
                         .frame(width: 30, height: 30)
                     Text(child.emoji)
-                        .font(.caption)
+                        .font(DSFont.caption)
                 }
 
                 Text(child.name)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
+                    .font(DSFont.subheadline)
+                    .foregroundStyle(DSColors.primary)
 
                 Spacer()
 
                 if selectedChild?.id == child.id {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(DSColors.accent)
+                        .transition(DSTransition.scaleAndFade)
                 }
             }
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - No Tags State
-
-    private var noTagsState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "tag.slash")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 6) {
-                Text("No Tags Yet")
-                    .font(.headline)
-                Text("Create a tag first from the Library tab.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
     }
 
     // MARK: - Save Button
@@ -232,12 +207,15 @@ struct SaveToTagSheet: View {
                     Label("Select a Tag to Save", systemImage: "bookmark")
                 }
             }
-            .font(.headline)
+            .font(DSFont.headline)
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(selectedTag != nil ? Color.accentColor : Color(.tertiarySystemFill))
-            .foregroundStyle(selectedTag != nil ? .white : .secondary)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .padding(DSSpacing.lg)
+            .background(
+                selectedTag != nil ? DSColors.accent : Color(.tertiarySystemFill)
+            )
+            .foregroundStyle(selectedTag != nil ? .white : DSColors.secondary)
+            .clipShape(RoundedRectangle(cornerRadius: DSRadius.lg, style: .continuous))
+            .animation(DSAnimation.quick, value: selectedTag != nil)
         }
         .disabled(selectedTag == nil)
     }
@@ -246,14 +224,9 @@ struct SaveToTagSheet: View {
 
     private func saveLink() {
         guard let tag = selectedTag else { return }
-
-        let faviconURL: String?
-        if let host = URL(string: url)?.host {
-            faviconURL = "https://www.google.com/s2/favicons?domain=\(host)&sz=64"
-        } else {
-            faviconURL = nil
+        let faviconURL: String? = URL(string: url)?.host.map {
+            "https://www.google.com/s2/favicons?domain=\($0)&sz=64"
         }
-
         let link = SavedLink(
             url: url,
             title: title.isEmpty ? url : title,

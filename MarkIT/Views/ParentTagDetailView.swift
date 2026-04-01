@@ -7,45 +7,41 @@ struct ParentTagDetailView: View {
     let tag: Tag
 
     @State private var showAddSubtag = false
-    @State private var subtahToEdit: Tag?
-    @State private var subtahToDelete: Tag?
+    @State private var subtagToEdit: Tag?
+    @State private var subtagToDelete: Tag?
     @State private var showDeleteSubtagAlert = false
     @State private var searchText = ""
 
     private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: DSSpacing.md),
+        GridItem(.flexible(), spacing: DSSpacing.md),
     ]
 
     private var filteredDirectLinks: [SavedLink] {
-        if searchText.isEmpty {
-            return tag.links.sorted { $0.savedAt > $1.savedAt }
-        }
+        let sorted = tag.links.sorted { $0.savedAt > $1.savedAt }
+        if searchText.isEmpty { return sorted }
         let query = searchText.lowercased()
-        return tag.links
-            .filter { $0.title.lowercased().contains(query) || $0.url.lowercased().contains(query) }
-            .sorted { $0.savedAt > $1.savedAt }
+        return sorted.filter {
+            $0.title.lowercased().contains(query) || $0.url.lowercased().contains(query)
+        }
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Child tag grid
-                if !tag.children.isEmpty || true {
-                    childrenSection
-                }
-
-                // Direct links section
+            VStack(alignment: .leading, spacing: DSSpacing.xl) {
+                childrenSection
                 if !tag.links.isEmpty || !searchText.isEmpty {
                     directLinksSection
                 }
-
-                // Empty state when everything is empty
                 if tag.children.isEmpty && tag.links.isEmpty {
-                    emptyState
+                    DSEmptyState(
+                        systemImage: "tray",
+                        title: "Nothing Here Yet",
+                        message: "Add subtags to organize your links,\nor save links directly to this tag."
+                    )
                 }
             }
-            .padding(16)
+            .padding(DSSpacing.lg)
         }
         .navigationTitle("\(tag.emoji) \(tag.name)")
         .navigationBarTitleDisplayMode(.large)
@@ -63,21 +59,19 @@ struct ParentTagDetailView: View {
         .sheet(isPresented: $showAddSubtag) {
             AddTagSheet(mode: .newChild(parent: tag))
         }
-        .sheet(item: $subtahToEdit) { subtag in
+        .sheet(item: $subtagToEdit) { subtag in
             AddTagSheet(mode: .edit(tag: subtag))
         }
         .alert(
-            "Delete \"\(subtahToDelete?.name ?? "")\"?",
+            "Delete \"\(subtagToDelete?.name ?? "")\"?",
             isPresented: $showDeleteSubtagAlert,
-            presenting: subtahToDelete
+            presenting: subtagToDelete
         ) { subtag in
             Button("Delete", role: .destructive) {
                 modelContext.delete(subtag)
-                subtahToDelete = nil
+                subtagToDelete = nil
             }
-            Button("Cancel", role: .cancel) {
-                subtahToDelete = nil
-            }
+            Button("Cancel", role: .cancel) { subtagToDelete = nil }
         } message: { subtag in
             Text("This will also delete all \(subtag.links.count) link(s) saved to this subtag.")
         }
@@ -87,19 +81,17 @@ struct ParentTagDetailView: View {
 
     @ViewBuilder
     private var childrenSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
             HStack {
                 Text("Subtags")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-
+                    .font(DSFont.headline)
+                    .foregroundStyle(DSColors.primary)
                 Spacer()
-
                 Button {
                     showAddSubtag = true
                 } label: {
                     Label("Add Subtag", systemImage: "plus")
-                        .font(.subheadline)
+                        .font(DSFont.subheadline)
                 }
             }
 
@@ -107,41 +99,45 @@ struct ParentTagDetailView: View {
                 Button {
                     showAddSubtag = true
                 } label: {
-                    HStack {
+                    HStack(spacing: DSSpacing.md) {
                         Image(systemName: "plus.circle.dashed")
                             .font(.title2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(DSColors.secondary)
                         Text("Add your first subtag")
-                            .foregroundStyle(.secondary)
+                            .font(DSFont.subheadline)
+                            .foregroundStyle(DSColors.secondary)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(DSSpacing.lg)
+                    .background(DSColors.secondaryBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: DSRadius.md, style: .continuous))
                 }
                 .buttonStyle(.plain)
             } else {
-                LazyVGrid(columns: columns, spacing: 12) {
+                LazyVGrid(columns: columns, spacing: DSSpacing.md) {
                     ForEach(tag.children.sorted(by: { $0.createdAt < $1.createdAt })) { child in
                         NavigationLink(destination: ChildTagDetailView(tag: child)) {
                             TagCard(tag: child, isCompact: true)
+                                .dsPressable()
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
                             Button {
-                                subtahToEdit = child
+                                subtagToEdit = child
                             } label: {
                                 Label("Edit Subtag", systemImage: "pencil")
                             }
                             Button(role: .destructive) {
-                                subtahToDelete = child
+                                subtagToDelete = child
                                 showDeleteSubtagAlert = true
                             } label: {
                                 Label("Delete Subtag", systemImage: "trash")
                             }
                         }
+                        .transition(DSTransition.scaleAndFade)
                     }
                 }
+                .animation(DSAnimation.spring, value: tag.children.count)
             }
         }
     }
@@ -150,26 +146,30 @@ struct ParentTagDetailView: View {
 
     @ViewBuilder
     private var directLinksSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
             Text("Saved Here")
-                .font(.headline)
+                .font(DSFont.headline)
+                .foregroundStyle(DSColors.primary)
 
             if filteredDirectLinks.isEmpty {
                 Text("No links match your search.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(DSFont.subheadline)
+                    .foregroundStyle(DSColors.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
+                    .padding(DSSpacing.lg)
             } else {
                 LazyVStack(spacing: 0) {
                     ForEach(filteredDirectLinks) { link in
                         NavigationLink(destination: BrowserView(initialURL: link.url)) {
-                            LinkRow(link: link)
+                            LinkRow(link: link, tagColorHex: tag.colorHex)
+                                .padding(.horizontal, DSSpacing.lg)
                         }
                         .buttonStyle(.plain)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                modelContext.delete(link)
+                                withAnimation(DSAnimation.spring) {
+                                    modelContext.delete(link)
+                                }
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -177,35 +177,14 @@ struct ParentTagDetailView: View {
 
                         if link.id != filteredDirectLinks.last?.id {
                             Divider()
-                                .padding(.leading, 44)
+                                .padding(.leading, DSSpacing.xxl + DSSpacing.md)
                         }
                     }
                 }
-                .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .background(DSColors.secondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: DSRadius.md, style: .continuous))
+                .animation(DSAnimation.spring, value: filteredDirectLinks.count)
             }
         }
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "tray")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 6) {
-                Text("Nothing Here Yet")
-                    .font(.headline)
-
-                Text("Add subtags to organize your links,\nor save links directly to this tag.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
     }
 }

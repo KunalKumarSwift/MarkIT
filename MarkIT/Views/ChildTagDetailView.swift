@@ -20,7 +20,11 @@ struct ChildTagDetailView: View {
     var body: some View {
         Group {
             if tag.links.isEmpty {
-                emptyState
+                DSEmptyState(
+                    systemImage: "bookmark.slash",
+                    title: "No Saved Links",
+                    message: "Browse the web and tap Save to\nadd links to this tag."
+                )
             } else {
                 linksList
             }
@@ -36,11 +40,13 @@ struct ChildTagDetailView: View {
         List {
             ForEach(filteredLinks) { link in
                 NavigationLink(destination: BrowserView(initialURL: link.url)) {
-                    LinkRow(link: link)
+                    LinkRow(link: link, tagColorHex: tag.colorHex)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {
-                        modelContext.delete(link)
+                        withAnimation(DSAnimation.spring) {
+                            modelContext.delete(link)
+                        }
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
@@ -52,27 +58,6 @@ struct ChildTagDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "bookmark.slash")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 6) {
-                Text("No Saved Links")
-                    .font(.headline)
-
-                Text("Browse the web and tap Save to add links\nto this tag.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .animation(DSAnimation.spring, value: filteredLinks.count)
     }
 }

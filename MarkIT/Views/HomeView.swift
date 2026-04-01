@@ -17,14 +17,20 @@ struct HomeView: View {
     @State private var showDeleteOptions = false
 
     private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: DSSpacing.md),
+        GridItem(.flexible(), spacing: DSSpacing.md),
     ]
 
     var body: some View {
         Group {
             if tags.isEmpty {
-                emptyState
+                DSEmptyState(
+                    systemImage: "tag.circle",
+                    title: "No Tags Yet",
+                    message: "Create your first tag to start\norganizing your study links.",
+                    actionTitle: "Create Tag",
+                    action: { showAddTag = true }
+                )
             } else {
                 tagGrid
             }
@@ -55,48 +61,15 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "tag.circle")
-                .font(.system(size: 64))
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 8) {
-                Text("No Tags Yet")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
-                Text("Create your first tag to start organizing\nyour study links.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            Button {
-                showAddTag = true
-            } label: {
-                Label("Create Tag", systemImage: "plus")
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.accentColor)
-                    .foregroundStyle(.white)
-                    .clipShape(Capsule())
-            }
-        }
-        .padding()
-    }
-
     // MARK: - Tag Grid
 
     private var tagGrid: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(tags) { tag in
+            LazyVGrid(columns: columns, spacing: DSSpacing.md) {
+                ForEach(Array(tags.enumerated()), id: \.element.id) { index, tag in
                     NavigationLink(destination: ParentTagDetailView(tag: tag)) {
                         TagCard(tag: tag)
+                            .dsPressable()
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
@@ -105,7 +78,6 @@ struct HomeView: View {
                         } label: {
                             Label("Edit Tag", systemImage: "pencil")
                         }
-
                         Button(role: .destructive) {
                             tagToDelete = tag
                             showDeleteOptions = true
@@ -113,9 +85,11 @@ struct HomeView: View {
                             Label("Delete Tag", systemImage: "trash")
                         }
                     }
+                    .transition(DSTransition.scaleAndFade)
                 }
             }
-            .padding(16)
+            .padding(DSSpacing.lg)
+            .animation(DSAnimation.spring, value: tags.count)
         }
     }
 
