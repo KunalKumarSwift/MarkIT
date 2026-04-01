@@ -6,7 +6,7 @@ struct MarkITApp: App {
     let container: ModelContainer
 
     init() {
-        let schema = Schema([Tag.self, SavedLink.self])
+        let schema = Schema([Tag.self, SavedLink.self, Goal.self, GoalCompletion.self])
         do {
             // Attempt to use a CloudKit-backed store for iCloud sync.
             // Requires the iCloud + CloudKit capabilities in the Xcode target
@@ -52,6 +52,13 @@ struct ContentView: View {
             }
             .tabItem {
                 Label("Browser", systemImage: "safari.fill")
+            }
+
+            NavigationStack {
+                GoalsView()
+            }
+            .tabItem {
+                Label("Goals", systemImage: "checkmark.circle.fill")
             }
         }
     }
