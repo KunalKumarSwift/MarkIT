@@ -1,0 +1,16 @@
+# fastlane match stores certificates and provisioning profiles in a
+# private git repository. Set MATCH_GIT_URL in GitHub Secrets to the
+# URL of that private repo (e.g. https://github.com/yourorg/certs-repo).
+git_url ENV["MATCH_GIT_URL"]
+
+# Encrypted with MATCH_PASSWORD (set in GitHub Secrets).
+# Run `bundle exec fastlane match appstore` locally to bootstrap.
+storage_mode "git"
+
+type "appstore"
+
+app_identifier ["com.mobile.MarkIT"]
+team_id "3AKEMCF7CZ"
+
+# In CI, never prompt for input — clone read-only and use cached certs.
+readonly true

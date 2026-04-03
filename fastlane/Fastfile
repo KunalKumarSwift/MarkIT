@@ -1,0 +1,69 @@
+default_platform(:ios)
+
+platform :ios do
+
+  # ── beta ────────────────────────────────────────────────────────────────
+  # Main lane: sync certs, build, and upload to TestFlight.
+  # Triggered by GitHub Actions on version tags (v*.*.*).
+  #
+  # Usage (locally):   bundle exec fastlane beta
+  # Usage (CI):        bundle exec fastlane beta
+  desc "Build and upload a new beta to TestFlight"
+  lane :beta do
+    # 1. Sync certificates and provisioning profiles from the match repo.
+    #    In CI, readonly:true is set in Matchfile so no write access needed.
+    sync_code_signing(type: "appstore")
+
+    # 2. Set the build number to the CI run number (or local timestamp).
+    build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
+    increment_build_number(
+      build_number: build_number,
+      xcodeproj: "MarkIT/MarkIT/MarkIT.xcodeproj"
+    )
+
+    # 3. Build the archive and export the IPA.
+    #    gym automatically picks up the provisioning profile synced by match.
+    build_app(
+      project: "MarkIT/MarkIT/MarkIT.xcodeproj",
+      scheme: "MarkIT",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "MarkIT.ipa",
+      clean: true,
+      # Suppress the full xcodebuild log; errors still surface on failure.
+      silent: false,
+      xcargs: "DEVELOPMENT_TEAM=3AKEMCF7CZ"
+    )
+
+    # 4. Upload to TestFlight.
+    #    Uses App Store Connect API key from environment (set in workflow).
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,  # don't block CI waiting for Apple
+      changelog: changelog_from_git_commits(
+        between: [last_git_tag, "HEAD"],
+        pretty: "- %s",
+        merge_commit_filtering: "exclude_merges"
+      )
+    )
+  end
+
+  # ── certificates ────────────────────────────────────────────────────────
+  # Run this locally once to bootstrap certs and profiles into the match repo.
+  # Never run in CI directly — CI uses the beta lane which calls sync_code_signing.
+  #
+  # Usage: bundle exec fastlane certificates
+  desc "Sync (or create) App Store certificates and profiles via match"
+  lane :certificates do
+    sync_code_signing(
+      type: "appstore",
+      readonly: false   # allow creating new certs/profiles if needed
+    )
+  end
+
+  # ── Error handling ───────────────────────────────────────────────────────
+  error do |lane, exception|
+    UI.error("Lane '#{lane}' failed with: #{exception.message}")
+  end
+
+end
