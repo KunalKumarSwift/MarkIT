@@ -1,1 +1,79 @@
+name: TestFlight Release
 
+# Triggers on version tags (e.g. v1.0.0) or manual dispatch.
+# To release: git tag v1.0.0 && git push origin v1.0.0
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+concurrency:
+  group: testflight-release
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: macos-latest
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history needed for changelog_from_git_commits
+
+      # ── 2. Ruby + Bundler ──────────────────────────────────────────────
+      # setup-ruby caches gems automatically via bundler-cache: true
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      # ── 3. Xcode version ───────────────────────────────────────────────
+      # NOTE: This project uses IPHONEOS_DEPLOYMENT_TARGET = 26.2 (Xcode 26).
+      # GitHub-hosted runners currently ship Xcode 16.x.
+      # OPTIONS:
+      #   A) Lower deployment target to 17.0 in Xcode (builds on Xcode 16 immediately)
+      #   B) Use a self-hosted runner with Xcode 26 (change runs-on to self-hosted)
+      #   C) Wait for GitHub to ship a runner image with Xcode 26
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.3.app/Contents/Developer 2>/dev/null \
+            || sudo xcode-select -s $(ls -d /Applications/Xcode*.app | sort -V | tail -1)/Contents/Developer
+          xcodebuild -version
+
+      # ── 4. App Store Connect API key ───────────────────────────────────
+      # fastlane pilot reads the key from ~/.appstoreconnect/private_keys/
+      # using the naming convention AuthKey_<KEY_ID>.p8
+      - name: Install App Store Connect API key
+        env:
+          ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_KEY_CONTENT" | base64 --decode \
+            > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      # ── 5. Run fastlane beta ───────────────────────────────────────────
+      # The beta lane handles: match sync → increment build → gym → pilot
+      - name: Fastlane beta
+        env:
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
+        run: bundle exec fastlane beta
+
+      # ── 6. Save IPA as artifact (30 days) ─────────────────────────────
+      - name: Upload IPA artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarkIT-${{ github.ref_name }}-build${{ github.run_number }}
+          path: build/MarkIT.ipa
+          retention-days: 30
