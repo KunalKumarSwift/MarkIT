@@ -58,17 +58,17 @@ struct ContentView: View {
             }
 
             NavigationStack {
-                MoreView()
-            }
-            .tabItem {
-                Label("More", systemImage: "ellipsis.circle.fill")
-            }
-
-            NavigationStack {
                 GoalsView()
             }
             .tabItem {
                 Label("Goals", systemImage: "checkmark.circle.fill")
+            }
+
+            NavigationStack {
+                MoreView()
+            }
+            .tabItem {
+                Label("More", systemImage: "ellipsis.circle.fill")
             }
         }
     }
